@@ -1,0 +1,8 @@
+{
+   "scope": ["ZohoCRM.modules.ALL", "ZohoCRM.settings.ALL"],
+   "expiry_time": 1727556274924,
+   "client_id": "1000.95ZSJA7ZYM412J344SUJWU7RU5NKLO",
+   "client_secret": "d5d338951662ad773c7899bd15e5846786f173cd50",
+   "code": "1000.813c77d8f81a25cd25e81fa981987a98.dd5fe3542b6f53b52bc0720de0e68fb7",
+   "grant_type": "authorization_code"
+}
