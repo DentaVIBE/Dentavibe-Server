@@ -30,7 +30,7 @@ const transporter = nodemailer.createTransport({
 
 // Helper function to format array data
 function formatArrayData(arr) {
-   return arr.map((item) => (typeof item === "object" ? item.label : item)).join(", ");
+   return Array.isArray(arr) ? arr.map((item) => (typeof item === "object" ? item.label : item)).join(", ") : arr;
 }
 
 // Helper function to format object data
@@ -57,35 +57,35 @@ router.post("/submit-funnel", async (req, res) => {
       const emailBody = `
          New Appointment Request
 
+         Patient Information:
+         Name: ${funnelData.patientInfo.firstName} ${funnelData.patientInfo.lastName}
+         Contact: ${funnelData.patientInfo.contactNumber}
+         Email: ${funnelData.patientInfo.emailId}
+         Date of Birth: ${new Date(funnelData.patientInfo.dateOfBirth).toLocaleDateString()}
+         Gender: ${funnelData.patientInfo.gender}
+         Address: ${funnelData.patientInfo.address}, ${funnelData.patientInfo.city}
+
+         Appointment Details:
          Location: ${funnelData.location}
          Specific Concerns: ${formatArrayData(funnelData.specificConcerns)}
          Goals for Mouth: ${formatArrayData(funnelData.goalsForMouth)}
-         Factors Choosing Dentist: ${formatArrayData(funnelData.factorsChoosingDentist)}
          Best Time for Visit: ${formatArrayData(funnelData.bestTimeForVisit)}
-         Uses Social Assistance: ${funnelData.useSocialAssistance}
+
+         Selected Doctor: ${funnelData.selectedDoctor ? funnelData.selectedDoctor.name : "No preference"}
+         Selected Location: ${funnelData.selectedLocation ? funnelData.selectedLocation.name : "No preference"}
+         Address: ${funnelData.selectedLocation ? funnelData.selectedLocation.address : "N/A"}
+
+         Insurance Information:
          Has Insurance: ${funnelData.hasInsurance}
-         Insurance Provider: ${funnelData.insuranceProvider}
-         Insurance Member ID: ${funnelData.insuranceMemberId}
-         Is Primary Member: ${funnelData.isPrimaryMember}
+         ${
+            funnelData.hasInsurance === "yes"
+               ? `Provider: ${funnelData.insuranceProvider}
+         Member ID: ${funnelData.insuranceMemberId}
+         Is Primary Member: ${funnelData.isPrimaryMember}`
+               : ""
+         }
 
-         Selected Doctor:
-         ${formatObjectData(funnelData.selectedDoctor)}
-
-         Selected Location:
-         ${formatObjectData(funnelData.selectedLocation)}
-
-         No Preference: ${funnelData.isNoPreference}
-
-         Patient Information:
-         ${formatObjectData(funnelData.patientInfo)}
-
-         Insurance Details:
-         Subscriber ID: ${funnelData.insuranceSubscriberId}
-         Group Number: ${funnelData.insuranceGroupNumber}
-         Dependent First Name: ${funnelData.dependentFirstName}
-         Dependent Last Name: ${funnelData.dependentLastName}
-         Dependent Date of Birth: ${funnelData.dependentDateOfBirth || "N/A"}
-         Dependent Relationship: ${funnelData.dependentRelationship}
+         Uses Social Assistance: ${funnelData.useSocialAssistance}
       `;
 
       const mailOptions = {
@@ -96,8 +96,7 @@ router.post("/submit-funnel", async (req, res) => {
       };
 
       // Send email
-      const info = await transporter.sendMail(mailOptions);
-      console.log("Email sent:", info.messageId);
+      await transporter.sendMail(mailOptions);
 
       res.json({ status: true, message: "Appointment request sent successfully" });
    } catch (error) {
