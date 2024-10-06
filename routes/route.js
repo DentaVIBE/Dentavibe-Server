@@ -28,33 +28,16 @@ const transporter = nodemailer.createTransport({
    },
 });
 
-// Function to format the email body
-function formatEmailBody(funnelData) {
-   return `
-     New Appointment Request
- 
-     Patient Information:
-     Name: ${funnelData.patientInfo?.firstName || ""} ${funnelData.patientInfo?.lastName || ""}
-     Email: ${funnelData.patientInfo?.email || ""}
-     Phone: ${funnelData.patientInfo?.phone || ""}
- 
-     Appointment Details:
-     Location: ${funnelData.location || ""}
-     Specific Concerns: ${funnelData.specificConcerns?.join(", ") || ""}
-     Goals for Mouth: ${funnelData.goalsForMouth?.join(", ") || ""}
-     Factors Choosing Dentist: ${funnelData.factorsChoosingDentist?.join(", ") || ""}
-     Best Time for Visit: ${funnelData.bestTimeForVisit?.join(", ") || ""}
- 
-     Additional Information:
-     Uses Social Assistance: ${funnelData.useSocialAssistance || ""}
-     Has Insurance: ${funnelData.hasInsurance || ""}
-     Insurance Provider: ${funnelData.insuranceProvider || ""}
-     Insurance Member ID: ${funnelData.insuranceMemberId || ""}
-     Is Primary Member: ${funnelData.isPrimaryMember || ""}
-     Selected Doctor: ${funnelData.selectedDoctor || ""}
-     Selected Location: ${funnelData.selectedLocation || ""}
-     No Preference: ${funnelData.isNoPreference || ""}
-   `;
+// Helper function to format array data
+function formatArrayData(arr) {
+   return arr.map((item) => (typeof item === "object" ? item.label : item)).join(", ");
+}
+
+// Helper function to format object data
+function formatObjectData(obj) {
+   return Object.entries(obj)
+      .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`)
+      .join("\n");
 }
 
 router.get("/test-zoho-token", async (req, res) => {
@@ -71,12 +54,45 @@ router.post("/submit-funnel", async (req, res) => {
       const funnelData = req.body;
       console.log("Funnel data:", JSON.stringify(funnelData));
 
-      // Prepare email options
+      const emailBody = `
+         New Appointment Request
+
+         Location: ${funnelData.location}
+         Specific Concerns: ${formatArrayData(funnelData.specificConcerns)}
+         Goals for Mouth: ${formatArrayData(funnelData.goalsForMouth)}
+         Factors Choosing Dentist: ${formatArrayData(funnelData.factorsChoosingDentist)}
+         Best Time for Visit: ${formatArrayData(funnelData.bestTimeForVisit)}
+         Uses Social Assistance: ${funnelData.useSocialAssistance}
+         Has Insurance: ${funnelData.hasInsurance}
+         Insurance Provider: ${funnelData.insuranceProvider}
+         Insurance Member ID: ${funnelData.insuranceMemberId}
+         Is Primary Member: ${funnelData.isPrimaryMember}
+
+         Selected Doctor:
+         ${formatObjectData(funnelData.selectedDoctor)}
+
+         Selected Location:
+         ${formatObjectData(funnelData.selectedLocation)}
+
+         No Preference: ${funnelData.isNoPreference}
+
+         Patient Information:
+         ${formatObjectData(funnelData.patientInfo)}
+
+         Insurance Details:
+         Subscriber ID: ${funnelData.insuranceSubscriberId}
+         Group Number: ${funnelData.insuranceGroupNumber}
+         Dependent First Name: ${funnelData.dependentFirstName}
+         Dependent Last Name: ${funnelData.dependentLastName}
+         Dependent Date of Birth: ${funnelData.dependentDateOfBirth || "N/A"}
+         Dependent Relationship: ${funnelData.dependentRelationship}
+      `;
+
       const mailOptions = {
          from: process.env.EMAIL_USER,
-          to: "smile@dentavibe.com",
+         to: "smile@dentavibe.com",
          subject: "New Appointment Request",
-         text: formatEmailBody(funnelData),
+         text: emailBody,
       };
 
       // Send email
