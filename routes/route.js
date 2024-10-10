@@ -1,8 +1,6 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
 
-const { getZohoAccessToken, createZohoLead } = require("../services/zoho");
-
 const router = express.Router();
 
 // Middleware to log requests
@@ -32,22 +30,6 @@ const transporter = nodemailer.createTransport({
 function formatArrayData(arr) {
    return Array.isArray(arr) ? arr.map((item) => (typeof item === "object" ? item.label : item)).join(", ") : arr;
 }
-
-// Helper function to format object data
-function formatObjectData(obj) {
-   return Object.entries(obj)
-      .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`)
-      .join("\n");
-}
-
-router.get("/test-zoho-token", async (req, res) => {
-   try {
-      const accessToken = await getZohoAccessToken();
-      res.json({ status: true, accessToken });
-   } catch (error) {
-      res.status(500).json({ status: false, error: error.message });
-   }
-});
 
 router.post("/submit-funnel", async (req, res) => {
    try {
@@ -90,7 +72,7 @@ router.post("/submit-funnel", async (req, res) => {
 
       const mailOptions = {
          from: process.env.EMAIL_USER,
-         to: "smile@dentavibe.com",
+         to: process.env.NOTIFICATION_EMAIL,
          subject: "New Appointment Request",
          text: emailBody,
       };
@@ -128,6 +110,52 @@ router.post("/subscribe-newsletter", async (req, res) => {
       res.json({ status: true, message: "Successfully subscribed to the newsletter" });
    } catch (error) {
       console.error("Error subscribing to newsletter:", error);
+      res.status(500).json({ status: false, error: error.message || "Internal server error" });
+   }
+});
+
+router.post("/notify-me", async (req, res) => {
+   try {
+      const { email } = req.body;
+
+      if (!email) {
+         return res.status(400).json({ status: false, error: "Email is required" });
+      }
+
+      // Email to the admin
+      const adminMailOptions = {
+         from: process.env.EMAIL_USER,
+         to: process.env.NOTIFICATION_EMAIL,
+         subject: "New Notification Request",
+         text: `A new user has requested to be notified about joining or updates.
+
+         Email: ${email}
+
+         Please follow up with this potential member.`,
+      };
+
+      await transporter.sendMail(adminMailOptions);
+
+      // Confirmation email to the user
+      const userMailOptions = {
+         from: process.env.EMAIL_USER,
+         to: email,
+         subject: "Thank You for Your Interest in Dentavibe",
+         text: `Dear Potential Member,
+
+         Thank you for your interest in Dentavibe. We have received your notification request and our team will be in touch with you shortly with more information about joining or any updates.
+
+         If you have any immediate questions, please don't hesitate to contact us at smile@dentavibe.com.
+
+         Best regards,
+         The Dentavibe Team`,
+      };
+
+      await transporter.sendMail(userMailOptions);
+
+      res.json({ status: true, message: "Notification request received successfully" });
+   } catch (error) {
+      console.error("Error processing notification request:", error);
       res.status(500).json({ status: false, error: error.message || "Internal server error" });
    }
 });
